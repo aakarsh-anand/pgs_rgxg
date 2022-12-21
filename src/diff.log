@@ -1,0 +1,337 @@
+31d30
+< 
+115a115
+> bool snp_fix_ef=false;
+120a121
+> vector<int> selected_snps_vec;
+147a149
+> int  selected_snps;
+222c224,227
+< 		covariate.resize(Nind, covNum); 
+---
+> 		if(snp_fix_ef==true)
+> 		    covariate.resize(Nind, covNum+1);
+> 		else
+> 		   covariate.resize(Nind, covNum); 
+306c311,314
+< 	}	
+---
+> 	}
+> 	if(snp_fix_ef==true)	
+> 	return covNum+1;
+> 	else
+761c769
+<                 res(sel_snp_local_index-1,0)=0;
+---
+>                 res(sel_snp_local_index-1,0)=0; /// Boyang: This might be the problem
+1042c1050,1051
+< 	int selected_snps=0;
+---
+> 	//  selected_snps=0; // Boyang: change selected_snps into an array
+>         selected_snps_vec.resize(num_parti,0);
+1045c1054,1055
+< 		selected_snps+=len[i];
+---
+> 		selected_snps_vec[i]=len[i]; // Boyang: change selected_snps to selected_snps_vec
+>                 cout<<" Number of selected SNPs w.r.t  annot file : " <<selected_snps_vec[i]<<endl;
+1048d1057
+< 	cout<<" Number of selected SNPs w.r.t  annot file : " <<selected_snps<<endl;
+1230,1231d1238
+< 
+< 
+1368,1369c1375,1376
+< for(int i=0;i<num_snp;i++){
+<                 global_snp_index++;
+---
+> for(int i=0;i<num_snp;i++){ // Boyang: num_snp: snps in the current bin
+>                 global_snp_index++; // Boyang: global_snp_index starts from 0 
+1376,1377c1383,1384
+<        		if(annot_bool[global_snp_index][bin_index]==1)
+< 			  pointer_bins.push_back(bin_index);
+---
+>        		if(annot_bool[global_snp_index][bin_index]==1) // Boyang: checking annotation !!!
+> 			  pointer_bins.push_back(bin_index); // Boyang: pointer_bins has size <= Nbin, stores which bin has the global_snp_index
+1412,1414c1419,1420
+<                             for(int bin_index=0;bin_index<pointer_bins.size();bin_index++){
+< 					
+< 				       bin_pointer=pointer_bins[bin_index];
+---
+>                             for(int bin_index=0;bin_index<pointer_bins.size();bin_index++){ // !!!
+> 				        bin_pointer=pointer_bins[bin_index]; // bin_pointer: the bin index with 1 for global_snp_index 
+1418c1424
+<                                          snp_index=allgen_mail[bin_pointer].index;
+---
+>                                          snp_index=allgen_mail[bin_pointer].index; // Boyang: ??? isn't allgen_mail[bin_pointer].index here is 0?
+1430d1435
+< 
+1627c1632
+< 	 if(exclude_sel_snp==true)
+---
+> 	 if(exclude_sel_snp==true) //Boyang set selected snp to 0
+2068c2073
+< 	Nz=command_line_opts.num_of_evec;
+---
+> 	Nz=command_line_opts.num_of_evec; // number of random vectors
+2115c2120
+< selected_snp_index=command_line_opts.snp_index;
+---
+> selected_snp_index=command_line_opts.snp_index; // Boyang: this is the target gxg snps
+2130d2134
+< cout<<Enviro(0,0)<<endl;
+2133d2136
+< cout<<Enviro(0,0)<<endl;
+2138,2141c2141,2148
+<  sel_snp_jack=(selected_snp_index-1)/step_size;
+< if(sel_snp_jack>=Njack)
+<         sel_snp_jack=Njack-1;
+<  sel_snp_local_index=selected_snp_index-(step_size*sel_snp_jack);
+---
+> // step_size=Nsnp/Njack;
+>  sel_snp_jack=(selected_snp_index-1)/step_size; // Boyang: step_size is the number of snps per block. step_size * block number = all snps
+> if(sel_snp_jack>=Njack){
+>   cout << "sel_snp_jack out of bound: " << sel_snp_jack << endl;
+>   sel_snp_jack=Njack-1; 
+> }
+>        
+>  sel_snp_local_index=selected_snp_index-(step_size*sel_snp_jack); // Boyang: get the local index !!!
+2150,2152c2157,2158
+< 
+< 
+< 
+---
+> if(command_line_opts.fixed_eff==true)
+> 	snp_fix_ef=true;
+2161c2167,2169
+< 	//cout<<cov_num<<endl;
+---
+>      cout<<"Total number of fixed effects: "<<cov_num<<endl;
+>      if(snp_fix_ef==true)
+>      	covariate.col(cov_num-1)=Enviro.col(0);
+2169d2176
+< 
+2178c2185
+< /*MatrixXdr v1=covariate.transpose()*pheno; //W^ty
+---
+> /*MatrixXdr v1=covariate.transpose()*pheno; //W^vty
+2183a2191,2192
+> 
+> double phen_sd=0;
+2194c2203,2204
+<        if(pheno(i,0)!=0)
+---
+>          phen_sd+=(pheno(i,0)-y_mean)*(pheno(i,0)-y_mean);
+> 	if(pheno(i,0)!=0)
+2196a2207,2208
+> phen_sd=sqrt(phen_sd/(mask.sum()-1));
+> pheno=pheno/phen_sd;
+2204a2217
+>        phen_sd+=(pheno(i,0)-y_mean)*(pheno(i,0)-y_mean);
+2207a2221,2222
+> phen_sd=sqrt(phen_sd/(mask.sum()-1));
+> pheno=pheno/phen_sd;
+2233a2249,2250
+> 
+> 
+2310a2328
+> int nongen_Nbin=Nbin; // Boyang change here -- to make each linear component corresponding to a nonlinear component
+2312,2315c2330,2342
+< int nongen_Nbin=Nenv;
+< for (int i=0;i<Nenv;i++){
+<   if(remove_self_inter==true)
+<                 len.push_back(Nsnp-1); /// GxG ; remove selected snp
+---
+> bool snp_in_annot=false;
+> int selected_snp_bin;
+> 
+> for (int j=0;j<Nbin;j++)
+> 	if(annot_bool[selected_snp_index-1][j]==1){
+>                 selected_snp_bin = j;
+> 		snp_in_annot=true;
+>         }
+>                 
+> 
+> for (int i=0;i<nongen_Nbin;i++){ // Boyang: here extend len to deal with gxg; change Nenv to nongen_Nbin
+>   if(remove_self_inter==true && snp_in_annot==true && i==selected_snp_bin) // Boyang: double change here, only remove length if selected snp in current set
+>                 len.push_back(selected_snps_vec[i]-1); /// GxG ; remove selected snp; Boyang: replace selected_snps with selected_snps_vec
+2317c2344
+<                  len.push_back(Nsnp);
+---
+>                  len.push_back(selected_snps_vec[i]);
+2319d2345
+< 
+2367c2393
+< for (int jack_index=0;jack_index<Njack;jack_index++){	
+---
+> for (int jack_index=0;jack_index<Njack;jack_index++){ // Boyang: stream block
+2376c2402,2403
+< 	allgen_mail[i].segment_size_hori = floor(log(Nindv)/log(3)) - 2 ;
+---
+>         // Boyang: allgen has # components dimension, store the genotype information of current jacknife block ???
+> 	allgen_mail[i].segment_size_hori = floor(log(Nindv)/log(3)) - 2 ; // object of the mailman
+2385c2412
+< 	 allgen_mail[i].columnsum.resize(jack_bin[jack_index][i],1);
+---
+> 	 allgen_mail[i].columnsum.resize(jack_bin[jack_index][i],1); // Boyang: calculate how many columns belongs to bin i
+2400c2427
+< 		read_bed_1colannot(ifs,missing,read_Nsnp);
+---
+> 		read_bed_1colannot(ifs,missing,read_Nsnp); //sequentially read a block of snps from bed file
+2429c2456
+< 	       stds(i,0)=1/sqrt((means(i,0)*(1-(0.5*means(i,0)))));
+---
+> 	       stds(i,0)=1/sqrt((means(i,0)*(1-(0.5*means(i,0))))); // ??? Boyang: I don't understand how the stds is calculated
+2467,2468c2494,2498
+<                if(sel_snp_jack==jack_index&& annot_bool[selected_snp_index-1][bin_index]==1)
+<                         exclude_sel_snp=true;
+---
+>                if(sel_snp_jack==jack_index&& annot_bool[selected_snp_index-1][bin_index]==1) {
+>                 exclude_sel_snp=true;
+>                }
+>                // Boyang: selected_snp_index is the global index of the gxg snp     
+>                 else {exclude_sel_snp=false;} // Boyang: add this condition
+2473,2492c2503,2514
+< 	 for (int env_index=0;env_index<Nenv;env_index++){
+< 		   MatrixXdr env_all_zb=all_zb.array().colwise()*Enviro.col(env_index).array();
+< 		   
+< 		   output_env=compute_XXz(num_snp,env_all_zb);
+< 		  
+< 		  output_env=output_env.array().colwise()*Enviro.col(env_index).array();
+<          	  for (int z_index=0;z_index<Nz;z_index++){
+< 			 XXz.col( ((Nbin+env_index)*Nz)+z_index)+=output_env.col(z_index);		
+< 		  }
+<  		 
+< 
+< 		 scaled_pheno= pheno.array()*Enviro.col(env_index).array();
+< 		 MatrixXdr temp=compute_XXy(num_snp,scaled_pheno);
+< 		 temp=temp.array()*Enviro.col(env_index).array();
+< 		/// 
+< 		 wt.col(Nbin+env_index)+=temp;
+< 		///
+< 		 if(both_side_cov==false)
+<              		yXXy(Nbin+env_index,0)+=compute_yXXy(num_snp,scaled_pheno);
+< 		///
+---
+>         // Boyang change here: instead of cumulate the gxg component for each bin, wt is updated for each sigma_g bin
+> 	//  for (int env_index=0;env_index<Nenv;env_index++){
+>         int env_index=0;
+>         MatrixXdr env_all_zb=all_zb.array().colwise()*Enviro.col(env_index).array();
+>         
+>         output_env=compute_XXz(num_snp,env_all_zb);  // z is the random vector
+>         
+>         output_env=output_env.array().colwise()*Enviro.col(env_index).array();
+>         for (int z_index=0;z_index<Nz;z_index++){
+>                 XXz.col( ((Nbin+bin_index)*Nz)+z_index)+=output_env.col(z_index); //change env_index to bin_index		
+>         }
+>         
+2494c2516,2525
+< 	}
+---
+>         scaled_pheno= pheno.array()*Enviro.col(env_index).array();
+>         MatrixXdr temp=compute_XXy(num_snp,scaled_pheno);
+>         temp=temp.array()*Enviro.col(env_index).array();
+> /// 
+>         wt.col(Nbin+bin_index)+=temp; // change env_index to bin_index
+> ///
+>         if(both_side_cov==false)
+>         yXXy(Nbin+bin_index,0)+=compute_yXXy(num_snp,scaled_pheno); //change env_index to bin_index		
+>         ///
+> 	// }
+2546,2548c2577,2578
+< 
+<         	std::vector< std::vector<int> >().swap(g.p);
+<         	std::vector< std::vector<int> >().swap(g.not_O_j);
+---
+>                 std::vector< std::vector<int> >().swap(g.p);
+>                 std::vector< std::vector<int> >().swap(g.not_O_j);
+2549a2580,2594
+>                 g.columnsum.clear();
+>         	g.columnsum2.clear();
+>         	g.columnmeans.clear();
+>        		g.columnmeans2.clear();
+> 
+> 	    }
+>         }
+> 
+>      }
+> 
+>      // Boyang: move the memory free block outside of the jacknife block ???
+>         if(use_mailman==true){
+>                 for (int bin_index=0;bin_index<Nbin;bin_index++){ 
+>      
+>         	
+2556,2559c2601
+<         	g.columnsum.clear();
+<         	g.columnsum2.clear();
+<         	g.columnmeans.clear();
+<        		 g.columnmeans2.clear();
+---
+>         	
+2564c2606
+< 	    }
+---
+>                 }
+2566,2567d2607
+< 
+<      }
+2591a2632
+>          cout << "bin " << i << " length: " << len[i] << endl;
+2648c2689
+<                 num_snp=allgen_mail[bin_index].index;
+---
+>                 num_snp=allgen_mail[bin_index].index; // num_snp is the number of snps in the current bin index -- # components
+2689c2730
+< 				 vt.col((bin_index*(total_bin_num+1))+i)+=val_temp/len[bin_index];
+---
+> 				 vt.col((bin_index*(total_bin_num+1))+i)+=val_temp/len[bin_index]; // Boyang: what is vt??
+2700c2741
+< 	 if(remove_self_inter==true)
+---
+> 	 if(remove_self_inter==true) // self-interaction
+2706,2710c2747,2752
+<           for (int env_index=0;env_index<Nenv;env_index++){
+< 		   scaled_vec= wt.col(i).array()*Enviro.col(env_index).array();
+<                  MatrixXdr temp=compute_XXy(num_snp,scaled_vec);
+<                  temp=temp.array()*Enviro.col(env_index).array();
+< 		  vt.col(((Nbin+env_index)*(total_bin_num+1))+i)+=temp/len[Nbin+env_index];
+---
+>                  int env_index = bin_index; // change here, so that not gxg not cumulated
+>         //   for (int env_index=0;env_index<nongen_Nbin;env_index++){ // Boyang: change Nenv to nongen_Nbin ; cancel this loop
+> 		   scaled_vec= wt.col(i).array()*Enviro.col(0).array(); // change env_index to 0
+>                  MatrixXdr temp=compute_XXy(num_snp,scaled_vec); // This is X_t X_t y num_snps could need modify; update: num_snps is the snp number in the bin_index
+>                  temp=temp.array()*Enviro.col(0).array(); // change env_index to 0
+> 		  vt.col(((Nbin+env_index)*(total_bin_num+1))+i)+=temp/len[Nbin+env_index]; // Boyang: could be right
+2712c2754
+< 	  }
+---
+> 	//   }
+2888a2931
+> MatrixXdr herit_est;
+2891c2934
+< 
+---
+> herit_est.resize(Nbin+1,1);
+2995,2996c3038,3039
+<         point_est(j,0)=point_est(j,0)/temp_sum;
+<         temp_sig+=point_est(j,0);
+---
+>         herit_est(j,0)=point_est(j,0)/temp_sum;
+>         temp_sig+=herit_est(j,0);
+2998c3041
+< point_est(Nbin,0)=temp_sig;
+---
+> herit_est(Nbin,0)=temp_sig;
+3001c3044
+< cout<<point_est<<endl;
+---
+> cout<<herit_est<<endl;
+3031,3034c3074,3078
+<       double term2=(wt.col(k).array()*e.array()).sum();
+<       double term3=(wt.col(l).array()*e.array()).sum(); 
+<       double all=2*(sum1-term2-term3+d);
+<       cov_q(k,l)=all;
+---
+>       //double term2=(wt.col(k).array()*e.array()).sum();
+>       //double term3=(wt.col(l).array()*e.array()).sum(); 
+>       //double all=2*(sum1-term2-term3+d);
+>        double all=2*sum1;
+> 	cov_q(k,l)=all;
